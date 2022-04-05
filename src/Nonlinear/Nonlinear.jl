@@ -20,6 +20,8 @@ include("operators.jl")
 include("types.jl")
 include("parse.jl")
 
+include("ReverseAD/ReverseAD.jl")
+
 """
     set_objective(data::NonlinearData, obj)
 """

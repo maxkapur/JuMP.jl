@@ -46,5 +46,6 @@ Nonlinear.register_operator
 ```@docs
 Nonlinear.AbstractAutomaticDifferentiation
 Nonlinear.Default
+Nonlinear.SparseReverseMode
 Nonlinear.set_differentiation_backend
 ```
