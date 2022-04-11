@@ -38,7 +38,7 @@ nonlinear information added to the model.
 Decision variables are represented by [`MOI.VariableIndex`](@ref)s. The user is
 responsible for creating these.
 
-### Expressions
+### [Expressions](@id Nonlinear_Expressions)
 
 The input data-structure is a Julia `Expr`. The input expressions can
 incorporate [`MOI.VariableIndex`](@ref)es, but these must be interpolated into
@@ -68,7 +68,7 @@ JuMP.Nonlinear.ExpressionIndex(1)
 The return value, `expr`, is a [`Nonlinear.ExpressionIndex`](@ref) that can
 then be interpolated into other input expressions.
 
-### Parameters
+### [Parameters](@id Nonlinear_Parameters)
 
 In addition to constant literals like `1` or `1.23`, you can create parameters.
 Parameter are constants that you can change before passing the expression to the
@@ -86,14 +86,14 @@ Update a parameter using [`Nonlinear.set_parameter`](@ref):
 julia> Nonlinear.set_parameter(data, p, 4.56)
 ```
 
-### Objectives
+### [Objectives](@id Nonlinear_Objectives)
 
 Set a nonlinear objective using [`Nonlinear.set_objective`](@ref):
 ```jldoctest nonlinear_developer
 julia> Nonlinear.set_objective(data, :($p + $expr + $x))
 ```
 
-### Constraints
+### [Constraints](@id Nonlinear_Constraints)
 
 Add a constraint using [`Nonlinear.add_constraint`](@ref):
 ```jldoctest nonlinear_developer
@@ -179,15 +179,15 @@ julia> function ∇g(ret, x...)
 julia> Nonlinear.register_operator(data, :my_g2, 2, g, ∇g)
 ```
 
-## MathOptInterface
+## [MathOptInterface](@id Nonlinear_MOI_interface)
 
 `Nonlinear` implements the MathOptInterface API to allow solvers to query the
 function and derivative information of our nonlinear model `data`. However,
 before we can call [`MOI.initialize`](@ref), we need to set an
-[`Nonlinear.AutomaticDifferentiationBackend`](@ref).
+[`Nonlinear.AbstractAutomaticDifferentiation`](@ref).
 
 There are two to choose from within JuMP, although other packages may add more
-options by sub-typing [`Nonlinear.AutomaticDifferentiationBackend`](@ref):
+options by sub-typing [`Nonlinear.AbstractAutomaticDifferentiation`](@ref):
  * [`Nonlinear.Default`](@ref)
  * [`Nonlinear.SparseReverseMode`](@ref).
 
@@ -207,9 +207,9 @@ NonlinearData with available features:
 
 The `:ExprGraph` feature means we can call [`MOI.objective_expr`](@ref) and
 [`MOI.constraint_expr`](@ref) to retrieve the expression graph of the problem.
-However, we cannot call gradient terms such as [`MOI.objective_gradient`](@ref)
-because [`Nonlinear.Default`](@ref) does not know how to differentiate a
-nonlinear expression.
+However, we cannot call gradient terms such as
+[`MOI.eval_objective_gradient`](@ref) because [`Nonlinear.Default`](@ref) does
+not know how to differentiate a nonlinear expression.
 
 If, instead, we set [`Nonlinear.SparseReverseMode`](@ref), then we get access to
 `:Grad`, the gradient of the objective function, `:Jac`, the jacobian matrix of

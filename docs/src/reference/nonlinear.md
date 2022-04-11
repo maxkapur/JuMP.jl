@@ -7,27 +7,27 @@ section of the manual.
 Nonlinear.NonlinearData
 ```
 
-## Expressions
+## [Expressions](@id nonlinear_api_expressions)
 
 ```@docs
 Nonlinear.add_expression
 Nonlinear.ExpressionIndex
 ```
 
-## Parameters
+## [Parameters](@id nonlinear_api_parameters)
 
 ```@docs
 Nonlinear.add_parameter
 Nonlinear.ParameterIndex
 ```
 
-## Objectives
+## [Objectives](@id nonlinear_api_objectives)
 
 ```@docs
 Nonlinear.set_objective
 ```
 
-## Constraints
+## [Constraints](@id nonlinear_api_constraints)
 
 ```@docs
 Nonlinear.add_constraint
@@ -35,7 +35,7 @@ Nonlinear.ConstraintIndex
 Nonlinear.delete
 ```
 
-## User-defined operators
+## [User-defined operators](@id nonlinear_api_operators)
 
 ```@docs
 Nonlinear.register_operator
@@ -44,7 +44,7 @@ Nonlinear.register_operator
 ## Automatic-differentiation backends
 
 ```@docs
-Nonlinear.AutomaticDifferentiationBackend
+Nonlinear.AbstractAutomaticDifferentiation
 Nonlinear.Default
 Nonlinear.SparseReverseMode
 Nonlinear.set_differentiation_backend

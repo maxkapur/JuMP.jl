@@ -52,14 +52,23 @@ struct NonlinearConstraint
     }
 end
 
+"""
+    ParameterIndex
+"""
 struct ParameterIndex
     value::Int
 end
 
+"""
+    ExpressionIndex
+"""
 struct ExpressionIndex
     value::Int
 end
 
+"""
+    ConstraintIndex
+"""
 struct ConstraintIndex
     value::Int
 end
