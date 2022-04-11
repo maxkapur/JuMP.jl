@@ -144,7 +144,7 @@ function test_parse_array()
     c = [1.0]
     @test_throws(
         ErrorException(
-            "Unexpected array [1.0] in nonlinear expression. Nonlinear " *
+            "Unexpected array $(c') in nonlinear expression. Nonlinear " *
             "expressions may contain only scalar expressions.",
         ),
         Nonlinear.set_objective(data, :($(c') * $x)),
