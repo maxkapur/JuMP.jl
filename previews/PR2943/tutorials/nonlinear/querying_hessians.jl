@@ -237,7 +237,8 @@ add_to_hessian(H, f::Any, μ) = nothing
 
 for (F, S) in list_of_constraint_types(model)
     for cref in all_constraints(model, F, S)
-        add_to_hessian(H, constraint_object(cref).func, dual(cref))
+        f = constraint_object(cref).func
+        add_to_hessian(H, f, dual(cref))
     end
 end
 
