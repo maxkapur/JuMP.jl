@@ -148,17 +148,3 @@ function set_differentiation_backend(
     data.inner = nothing
     return
 end
-
-"""
-    SparseReverseMode() <: AbstractAutomaticDifferentiation
-"""
-struct SparseReverseMode <: AbstractAutomaticDifferentiation end
-
-function set_differentiation_backend(
-    data::NonlinearData,
-    ::SparseReverseMode,
-    ordered_variables::Vector{MOI.VariableIndex},
-)
-    data.inner = ReverseAD.NLPEvaluator(data, ordered_variables)
-    return
-end

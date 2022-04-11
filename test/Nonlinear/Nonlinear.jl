@@ -81,6 +81,87 @@ function test_parse_ifelse_logic_inequality()
     return
 end
 
+function test_parse_splat_prod()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex.(1:3)
+    Nonlinear.set_objective(data, :(*($x...)))
+    MOI.initialize(data, [:ExprGraph])
+    @test MOI.objective_expr(data) == :(x[$(x[1])] * x[$(x[2])] * x[$(x[3])])
+    return
+end
+
+function test_parse_splat_top_level()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex.(1:3)
+    @test_throws(
+        ErrorException(
+            "Unsupported use of the splatting operator. This is only " *
+            "supported in the arguments of a function call.",
+        ),
+        Nonlinear.set_objective(data, :(x...)),
+    )
+    return
+end
+
+function test_parse_splat_expr()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex.(1:3)
+    @test_throws(
+        ErrorException(
+            "Unsupported use of the splatting operator. JuMP supports " *
+            "splatting only symbols. For example, `x...` is ok, but " *
+            "`(x + 1)...`, `[x; y]...` and `g(f(y)...)` are not.",
+        ),
+        Nonlinear.set_objective(data, :(*((x ./ 2)...))),
+    )
+    return
+end
+
+function test_parse_univariate_prod()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex(1)
+    Nonlinear.set_objective(data, :(*($x)))
+    MOI.initialize(data, [:ExprGraph])
+    @test MOI.objective_expr(data) == :(*(x[$x]))
+    return
+end
+
+function test_parse_string()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex(1)
+    @test_throws(
+        ErrorException(
+            "Unexpected object abc of type String in nonlinear expression.",
+        ),
+        Nonlinear.set_objective(data, :($x + "abc")),
+    )
+    return
+end
+
+function test_parse_array()
+    data = Nonlinear.NonlinearData()
+    x = [MOI.VariableIndex(1)]
+    c = [1.0]
+    @test_throws(
+        ErrorException(
+            "Unexpected array [1.0] in nonlinear expression. Nonlinear " *
+            "expressions may contain only scalar expressions.",
+        ),
+        Nonlinear.set_objective(data, :($(c') * $x)),
+    )
+    return
+end
+
+function test_parse_unsupported_expression()
+    data = Nonlinear.NonlinearData()
+    x = (y = 1,)
+    @test_throws(
+        ErrorException("Unsupported expression: $(:(x.y))"),
+        Nonlinear.set_objective(data, :(x.y)),
+    )
+    return
+end
+
 function test_moi_variable_parse()
     data = Nonlinear.NonlinearData()
     x = MOI.VariableIndex(1)
@@ -268,6 +349,66 @@ function test_eval_univariate_hessian()
     return
 end
 
+function test_eval_univariate_function_registered_method_error()
+    r = Nonlinear.NonlinearData()
+    f(x::Float64) = sin(x)^2
+    @test_throws ErrorException Nonlinear.register_operator(r, :f, 1, f)
+    return
+end
+
+function test_univariate_function_register_twice()
+    r = Nonlinear.NonlinearData()
+    f(x) = x
+    Nonlinear.register_operator(r, :f, 1, f)
+    @test_throws(
+        ErrorException("Operator f is already registered."),
+        Nonlinear.register_operator(r, :f, 1, f),
+    )
+    @test_throws(
+        ErrorException("Operator f is already registered."),
+        Nonlinear.register_operator(r, :f, 2, f),
+    )
+    return
+end
+
+function test_multivariate_function_register_twice()
+    r = Nonlinear.NonlinearData()
+    f(x, y) = x + y
+    Nonlinear.register_operator(r, :f, 2, f)
+    @test_throws(
+        ErrorException("Operator f is already registered."),
+        Nonlinear.register_operator(r, :f, 1, f),
+    )
+    @test_throws(
+        ErrorException("Operator f is already registered."),
+        Nonlinear.register_operator(r, :f, 2, f),
+    )
+    return
+end
+
+function test_auto_register()
+    r = Nonlinear.OperatorRegistry()
+    f(x, y) = x + y
+    @test_throws ErrorException Nonlinear.assert_registered(r, :f, 2)
+    @test_logs (:warn,) Nonlinear.register_if_needed(r, :f, 2, f)
+    Nonlinear.assert_registered(r, :f, 2)
+    return
+end
+
+function test_eval_univariate_function_return_type()
+    r = Nonlinear.OperatorRegistry()
+    f(x) = x < 1 ? x : "x"
+    Nonlinear.register_operator(r, :f, 1, f)
+    @test_throws(
+        ErrorException(
+            "Expected return type of Float64 from a user-defined function, " *
+            "but got String.",
+        ),
+        Nonlinear.eval_univariate_function(r, :f, 1.2),
+    )
+    return
+end
+
 function test_eval_univariate_function_registered()
     r = Nonlinear.OperatorRegistry()
     f(x) = sin(x)^2
@@ -345,6 +486,13 @@ function test_eval_multivariate_gradient()
     @test g ≈ [2.2, 1.1]
     Nonlinear.eval_multivariate_gradient(r, :^, g, x)
     @test g ≈ [2.2 * 1.1^1.2, 1.1^2.2 * log(1.1)]
+    Nonlinear.eval_multivariate_gradient(r, :^, g, [1.1, 1.0])
+    @test g ≈ [1.0, 1.1 * log(1.1)]
+    Nonlinear.eval_multivariate_gradient(r, :^, g, [1.1, 2.0])
+    @test g ≈ [2.0 * 1.1, 1.1^2.0 * log(1.1)]
+    Nonlinear.eval_multivariate_gradient(r, :^, g, [-1.1, 2.0])
+    @test g[1] ≈ 2.0 * -1.1
+    @test isnan(g[2])
     Nonlinear.eval_multivariate_gradient(r, :/, g, x)
     @test g ≈ [1 / 2.2, -1.1 / 2.2^2]
     g = zeros(3)
@@ -449,6 +597,44 @@ end
 function test_features_available()
     data = Nonlinear.NonlinearData()
     @test MOI.features_available(data) == [:ExprGraph]
+    return
+end
+
+function test_features_available_Default()
+    data = Nonlinear.NonlinearData()
+    Nonlinear.set_differentiation_backend(
+        data,
+        Nonlinear.Default(),
+        MOI.VariableIndex[],
+    )
+    @test MOI.features_available(data) == [:ExprGraph]
+    return
+end
+
+function test_add_constraint_rows()
+    data = Nonlinear.NonlinearData()
+    x = MOI.VariableIndex(1)
+    constraints = [Nonlinear.add_constraint(data, :($x <= $i)) for i in 1:4]
+    MOI.initialize(data, Symbol[])
+    for i in 1:4
+        @test Nonlinear.row(data, constraints[i]) == i
+        @test MOI.is_valid(data, constraints[i])
+    end
+    Nonlinear.delete(data, constraints[1])
+    Nonlinear.delete(data, constraints[3])
+    MOI.initialize(data, Symbol[])
+    @test !MOI.is_valid(data, constraints[1])
+    @test MOI.is_valid(data, constraints[2])
+    @test Nonlinear.row(data, constraints[2]) == 1
+    @test !MOI.is_valid(data, constraints[3])
+    @test MOI.is_valid(data, constraints[4])
+    @test Nonlinear.row(data, constraints[4]) == 2
+    return
+end
+
+function test_show()
+    data = Nonlinear.NonlinearData()
+    @test occursin(":ExprGraph", sprint(show, data))
     return
 end
 
