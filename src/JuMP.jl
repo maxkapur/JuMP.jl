@@ -1367,8 +1367,7 @@ for sym in names(@__MODULE__, all = true)
     @eval export $sym
 end
 
-# TODO(odow): re-enable
-# include("precompile.jl")
-# _precompile_()
+include("precompile.jl")
+_precompile_()
 
 end
